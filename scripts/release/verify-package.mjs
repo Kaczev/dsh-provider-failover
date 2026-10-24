@@ -16,6 +16,6 @@ const lock = JSON.parse(read('plugin/package-lock.json'));
 assert.equal(lock.version, meta.version); assert.equal(lock.packages[''].version, meta.version);
 for (const file of ['README.md','LICENSE']) assert.ok(read(file).equals(read('plugin/' + file)), file + ' differs');
 assert.equal(meta.publishConfig.access, 'public');
-assert.deepEqual(meta.files, ['index.js','transport.js','client.js','cordis.patch.yml','locale','icon.svg']);
+assert.deepEqual(meta.files, ['index.js','transport.js','route-status.js','client.js','cordis.patch.yml','locale','icon.svg']);
 assert.equal(meta.engines.dsh, '0.2.1-rc.3');
 console.log('PASS version, publish allowlist, compatibility, README and LICENSE parity');

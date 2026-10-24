@@ -22,7 +22,7 @@ assert.ok(configured);
 let definition, registration;
 vm.runInNewContext(fs.readFileSync(path.join(dest, 'client.js'), 'utf8'), { window: { __ModuleLoader__: { load(value) { definition = value; } } }, URL });
 const client = definition.factory(() => ({ createElement() {} }));
-client.apply({ slots: { inject(name, callback) { assert.equal(name, 'settings.section'); callback(); }, register(value) { registration = value; } } });
+client.apply({ slots: { inject(name, callback) { assert.ok(['settings.section','conversation.session.header.actions'].includes(name)); callback(); }, register(value) { if (value.name === 'settings.section') registration = value; } } });
 assert.equal(registration.id, 'kaczev-provider-line-failover');
 assert.ok(fs.statSync(path.join(dest, 'transport.js')).isFile());
 console.log('PASS copied rc3 bundle metadata/resources, host policy, independent client registration; no core apply or Desktop changes');

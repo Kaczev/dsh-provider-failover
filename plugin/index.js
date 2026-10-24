@@ -90,6 +90,7 @@ export function createRouter(config = {}) {
     }
   };
 }
+import { createStatusChannel, STATUS_PATH } from './route-status.js';
 import { installTransport } from './transport.js';
 export async function apply(ctx, config) {
   ctx.effect(() => ctx.settings.configure({ auto: false }));
@@ -97,11 +98,15 @@ export async function apply(ctx, config) {
   const classes = [...new Set(entries.map(entry => entry.moduleNamespace?.PiAiAdapter))];
   if (!classes.length || classes.some(value => typeof value !== 'function')) throw Error('Active rc3 PiAiAdapter module unavailable; failover not installed');
   const turns = new Map();
+  const status = createStatusChannel();
+  // Connection owns authentication and Host/Origin checks for this exact route.
+  ctx.inject(['connection'], scope => scope.effect(() => scope.connection.fetch.register({ path: STATUS_PATH, methods: ['GET'], requestBody: 'buffered', fetch: request => status.fetch(request) })));
+  ctx.effect(() => () => status.dispose());
   ctx.on('agent/request', async (payload, next) => {
     const id = String(payload.agent.session.id);
     if (turns.get(id)?.turn !== payload.turn) turns.set(id, { turn: payload.turn, routes: new Map() });
     return next();
   });
-  ctx.on('agent/disposed', ({ agent }) => turns.delete(String(agent.session.id)));
-  for (const Adapter of classes) ctx.effect(() => installTransport(Adapter, () => config.providers.get(), turns));
+  ctx.on('agent/disposed', ({ agent }) => { const id = String(agent.session.id); turns.delete(id); status.publish(id, null); });
+  for (const Adapter of classes) ctx.effect(() => installTransport(Adapter, () => config.providers.get(), turns, Date.now, status.publish));
 }

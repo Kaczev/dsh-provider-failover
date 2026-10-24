@@ -122,7 +122,39 @@ window.__ModuleLoader__.load({
 .plf-settings .row{gap:8px;margin-bottom:10px}.plf-settings .icon{border:0;background:transparent;color:var(--dsw-alias-label-secondary);border-radius:8px}
 .plf-settings .footer{margin-top:20px;padding-top:16px}.plf-settings .cancel,.plf-settings .save{border-radius:10px;padding:6px 16px;min-height:32px}
 .plf-settings .save{background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-base)}`;
-  return { inject: ['slots', 'remote', 'remote.settings'], normalize, validateDraft, unwrapSettings, draftConflicts, apply(ctx) {
+  function RouteStatus({ sessionId }) {
+   const [status, setStatus] = React.useState(null), [open, setOpen] = React.useState(false);
+   const [position, setPosition] = React.useState({ left: 8, top: 0 });
+   const anchor = React.useRef(null), tooltipId = React.useId();
+   React.useEffect(() => {
+    setStatus(null); setOpen(false);
+    const source = new EventSource('/api/provider-line-failover/status?sessionId=' + encodeURIComponent(sessionId));
+    source.onmessage = event => { try { const value = JSON.parse(event.data); setStatus(value && ['active','connecting'].includes(value.phase) && [0,1,2].includes(value.index) ? value : null); } catch { setStatus(null); } };
+    source.onerror = () => setStatus(null);
+    return () => source.close();
+   }, [sessionId]);
+   const place = () => { const rect = anchor.current?.getBoundingClientRect(); if (rect) setPosition({ left: Math.max(8, Math.min(rect.left, window.innerWidth - 336)), top: rect.bottom + 9 }); };
+   React.useEffect(() => {
+    if (!open) return;
+    place(); window.addEventListener('resize', place); window.addEventListener('scroll', place, true);
+    return () => { window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true); };
+   }, [open]);
+   if (!status) return null;
+   const route = status.index ? '备用地址' + status.index : '默认地址';
+   const connecting = status.phase === 'connecting', label = connecting ? '连接' + route + '……' : route;
+   return h('span', { className: 'plf-route', onMouseEnter: () => { place(); setOpen(true); }, onMouseLeave: () => setOpen(false) },
+    h('style', null, ROUTE_CSS),
+    h('button', { type: 'button', ref: anchor, className: 'plf-route-label' + (connecting ? ' connecting' : '') + (status.index ? ' backup' : ''),
+     onFocus: () => { place(); setOpen(true); }, onBlur: () => setOpen(false), onClick: () => { place(); setOpen(value => !value); }, onKeyDown: event => { if (event.key === 'Escape') setOpen(false); }, 'aria-describedby': open ? tooltipId : undefined },
+     h('span', { className: 'plf-route-dot', 'aria-hidden': true }), h('span', { role: 'status', 'aria-live': 'polite' }, label)),
+    open ? h('span', { id: tooltipId, role: 'tooltip', className: 'plf-route-tooltip', style: position },
+     h('span', { className: 'plf-route-caption' }, (connecting ? '正在连接 · ' : '当前使用 · ') + route),
+     h('code', null, status.url || '未提供 API 地址'),
+     h('span', { className: 'plf-route-caption' }, connecting ? '正在尝试此地址，尚未确认连接成功' : '本会话当前使用的 API 地址')) : null);
+  }
+  const ROUTE_CSS = `/* Palette from design/route-status-ui.html; scoped to this widget, never the host theme. */.plf-route{--dsw-alias-label-secondary:#a5a5ab;--dsw-alias-label-primary:#ececef;--dsw-alias-state-success-primary:#80b99a;--dsw-alias-state-warn-primary:#d7b573;--dsw-alias-brand-primary:#93b0ff;--dsw-alias-border-l2:#414144;--dsw-alias-bg-layer-2:#252527;--dsw-alias-bg-overlay:#242426}.plf-route{display:inline-flex;flex-shrink:0}.plf-route-label{display:flex;align-items:center;gap:8px;border:0;background:transparent;color:var(--dsw-alias-label-secondary);padding:5px 8px;border-radius:6px;font:inherit;font-size:13px;min-height:30px;white-space:nowrap;cursor:pointer}.plf-route-label:hover,.plf-route-label:focus-visible{background:var(--dsw-alias-bg-layer-2);outline:none}.plf-route-label:focus-visible{box-shadow:0 0 0 1px var(--dsw-alias-brand-primary)}.plf-route-dot{width:6px;height:6px;background:var(--dsw-alias-state-success-primary);border-radius:50%;flex-shrink:0}.plf-route-label.backup .plf-route-dot{background:var(--dsw-alias-state-warn-primary)}.plf-route-label.connecting{color:var(--dsw-alias-brand-primary)}.plf-route-label.connecting .plf-route-dot{background:transparent;width:11px;height:11px;border:1.5px solid #455576;border-top-color:var(--dsw-alias-brand-primary);animation:plf-route-spin 1s linear infinite}.plf-route-tooltip{position:fixed;z-index:1000;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;width:328px;max-width:calc(100vw - 16px);padding:13px 15px;border:1px solid var(--dsw-alias-border-l2);border-radius:9px;background:var(--dsw-alias-bg-overlay);color:var(--dsw-alias-label-primary);box-shadow:0 8px 24px #0002;font:13px/1.6 -apple-system,"Segoe UI",sans-serif}.plf-route-caption{color:var(--dsw-alias-label-secondary);font-size:12px}.plf-route-tooltip code{font:12px/1.7 ui-monospace,Consolas,monospace;overflow-wrap:anywhere;white-space:normal}@keyframes plf-route-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.plf-route-label.connecting .plf-route-dot{animation:none}}`;
+  return { inject: ['slots', 'remote', 'remote.settings'], normalize, validateDraft, unwrapSettings, draftConflicts, RouteStatus, apply(ctx) {
+   ctx.slots.inject('conversation.session.header.actions', () => ctx.slots.register({ name: 'conversation.session.header.actions', id: NS + '-route', order: -8 }, props => h(RouteStatus, props)));
    ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: NS, order: 25, label: '备用地址' }, props => h(Page, { ...props, remote: ctx.remote })));
   } };
  },

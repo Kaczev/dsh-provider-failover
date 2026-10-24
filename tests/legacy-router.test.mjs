@@ -43,9 +43,10 @@ test('client bundle uses independent settings section and rejects unsafe draft d
   assert.match(client.validateDraft(draft(['', '']), '').reason, /至少/);
   assert.throws(() => resolveConfig({ Config }, { providers: { p: draft(['https://a.test','https://b.test','https://c.test']) } }), /两条/);
   assert.equal(client.validateDraft({ ...draft([]), enabled: false }, '').reason, '');
-  let options;
-  client.apply({ slots: { inject: (name, callback) => { assert.equal(name, 'settings.section'); callback(); }, register: opts => { options = opts; } } });
-  assert.equal(options.id, 'kaczev-provider-line-failover');
+  const registrations = [];
+  client.apply({ slots: { inject: (name, callback) => { assert.ok(['settings.section','conversation.session.header.actions'].includes(name)); callback(); }, register: opts => { registrations.push(opts); } } });
+  assert.equal(registrations.find(opts => opts.name === 'settings.section').id, 'kaczev-provider-line-failover');
+  assert.equal(registrations.find(opts => opts.name === 'conversation.session.header.actions').order, -8);
 });
 import { createRouter, eligible, validate, Config } from '../plugin/index.js';
 import { resolveConfig } from '../.runtime/node_modules/@deepseek-ai/cordis/lib/index.js';
