@@ -9,7 +9,7 @@
 在 DeepSeek Harness 的插件管理中安装：
 
 ```text
-@kaczev/dsh-provider-line-failover@0.0.1
+dsh-provider-failover@0.0.1
 ```
 
 启用后打开 **设置 → 备用地址**，选择已有供应商，填写备线 1、备线 2，打开「启用」并保存。两个输入框都可以留空，但启用时至少需要一条有效地址。配置保存后会保留，重启也不丢失。

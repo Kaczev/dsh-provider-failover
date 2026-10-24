@@ -6,7 +6,7 @@ import vm from 'node:vm';
 test('client bundle uses independent settings section and rejects unsafe draft destinations', () => {
   let definition;
   vm.runInNewContext(fs.readFileSync('plugin/client.js', 'utf8'), { window: { __ModuleLoader__: { load: value => { definition = value; } } }, URL });
-  assert.equal(definition.id, '@kaczev/dsh-provider-line-failover');
+  assert.equal(definition.id, 'dsh-provider-failover');
   const client = definition.factory(() => ({ createElement() {} }));
   const payload = { namespaces: [], writable: true };
   assert.equal(client.unwrapSettings({ ok: true, value: payload }), payload);

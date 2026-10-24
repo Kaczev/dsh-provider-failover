@@ -1,5 +1,5 @@
 window.__ModuleLoader__.load({
- id: '@kaczev/dsh-provider-line-failover',
+ id: 'dsh-provider-failover',
  factory(require) {
   const React = require('react'), h = React.createElement;
   const NS = 'kaczev-provider-line-failover';

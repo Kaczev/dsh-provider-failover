@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import vm from 'node:vm';
 import { pathToFileURL } from 'node:url';
 const root = path.resolve(import.meta.dirname, '../..');
-const dest = path.join(root, '.runtime/node_modules/@kaczev/dsh-provider-line-failover');
+const dest = path.join(root, '.runtime/node_modules/dsh-provider-failover');
 fs.mkdirSync(dest, { recursive: true });
 fs.cpSync(path.join(root, 'plugin'), dest, { recursive: true });
 const sha = file => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');

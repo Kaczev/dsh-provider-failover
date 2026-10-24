@@ -1,5 +1,5 @@
 - insert:
     - id: kaczev-provider-line-failover
-      name: '@kaczev/dsh-provider-line-failover'
+      name: 'dsh-provider-failover'
       config:
         providers: {}
