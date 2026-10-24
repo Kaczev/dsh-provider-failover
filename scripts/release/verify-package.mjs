@@ -5,7 +5,7 @@ const root = path.resolve(import.meta.dirname, '../..');
 const read = name => fs.readFileSync(path.join(root, name));
 const meta = JSON.parse(read('plugin/package.json'));
 assert.equal(meta.name, 'dsh-provider-failover');
-assert.equal(meta.version, '0.0.1');
+assert.equal(meta.version, '0.1.0');
 assert.equal(JSON.parse(read('plugin/package-lock.json')).name, meta.name);
 assert.equal(JSON.parse(read('plugin/package-lock.json')).packages[''].name, meta.name);
 assert.ok(read('plugin/cordis.patch.yml').toString().includes("name: '" + meta.name + "'"));

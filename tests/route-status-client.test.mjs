@@ -34,6 +34,11 @@ test('header renders all six labels, exact hover URL, keyboard dismissal and dis
   }
   const label = (phase === 'connecting' ? '连接' : '') + (index ? '备用地址'+index : '默认地址') + (phase === 'connecting' ? '……' : '');
   assert.equal(button.children[1].children[0], label);
+   const spinner = css.match(/\.plf-route-label\.connecting \.plf-route-dot\{([^}]+)\}/)[1];
+   for (const rule of ['display:block','box-sizing:border-box','flex:0 0 12px','width:12px','height:12px','aspect-ratio:1','border-radius:50%','transform-origin:50% 50%','padding:0','margin:0']) {
+    assert.ok(spinner.split(';').includes(rule), 'spinner geometry: ' + rule);
+    assert.ok(design.includes(rule), 'canonical spinner geometry: ' + rule);
+   }
   button.props.onFocus(); assert.equal(open,true);
   const tooltip = render().children[2];
   assert.equal(tooltip.props.role,'tooltip'); assert.equal(tooltip.children[1].children[0],state.url);
