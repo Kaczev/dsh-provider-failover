@@ -1,0 +1,12 @@
+{
+  "name": "dsh-provider-failover-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test.mjs",
+    "check": "node --check plugin/index.js && node --test test.mjs && node verify-deployment.mjs",
+    "pack:plugin": "npm pack ./plugin",
+    "verify:link": "node verify-link.mjs"
+  },
+  "engines": { "node": ">=22" }
+}

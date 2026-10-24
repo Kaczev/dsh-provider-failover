@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import assert from 'node:assert/strict';
+const root=import.meta.dirname;
+const profile=process.argv[2] ?? process.env.DSH_PROFILE_DIR ?? path.join(os.homedir(),'.dsh/profiles/desktop');
+const installed=path.join(profile,'node_modules/@kaczev/dsh-provider-line-failover');
+const expected=fs.realpathSync(path.join(root,'plugin'));
+assert.equal(fs.realpathSync(installed),expected,'Installed plugin must point directly to this repository');
+assert.equal(fs.readFileSync(path.join(installed,'index.js'),'utf8'),fs.readFileSync(path.join(expected,'index.js'),'utf8'));
+console.log(JSON.stringify({profile,installed,source:expected,singleSource:true,note:'Filesystem link verified; this does not prove active module reload or core patch availability.'},null,2));

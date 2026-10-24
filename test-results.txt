@@ -1,0 +1,26 @@
+▶ local integration suite
+  ✔ 502 switches next host retry; path/model/key/params preserved; new call resets (385.3635ms)
+  ✔ all backups fail; host retry budget unchanged; last route retained (41.9593ms)
+  ✔ always mode also switches (30.5299ms)
+  ✔ 401/403/400/context/429 never switch (76.4884ms)
+  ✔ 408 switches through real mapping (30.8434ms)
+  ✔ connection reset switches (13.9731ms)
+  ✔ timeout switches (515.0378ms)
+  ✔ cancel does not use backup (56.4684ms)
+  ✔ concurrent request isolation (15.8414ms)
+  ✔ partial SSE interruption fails closed, even always (46.3206ms)
+  ✔ tool/reasoning fragments fail closed (0.4021ms)
+  ✔ auxiliary purposes never consume agent route state (0.1205ms)
+  ✔ multiple backups advance in order; trailing slash and nested URL path (46.1389ms)
+  ✔ always retries exhausted routes until cancellation; no extra plugin loop (107.3854ms)
+  ✔ disabled/unconfigured providers remain primary (0.2494ms)
+  ✔ trust validation / status-body confusion (0.2516ms)
+✔ local integration suite (1395.2691ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2609.0155

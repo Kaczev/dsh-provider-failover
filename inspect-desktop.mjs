@@ -1,0 +1,12 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+const base=path.join(process.env.LOCALAPPDATA,'Programs/DeepSeek Harness');
+const archive=path.join(base,'resources/app.asar');
+const fd=fs.openSync(archive,'r');const pre=Buffer.alloc(16);fs.readSync(fd,pre,0,16,0);
+const size=pre.readUInt32LE(4);const buf=Buffer.alloc(size);fs.readSync(fd,buf,0,size,8);fs.closeSync(fd);
+const header=JSON.parse(buf.subarray(8,8+buf.readUInt32LE(4)).toString());
+const exe=fs.readFileSync(path.join(base,'DeepSeek Harness.exe'));
+const marker=Buffer.from('dL7pKGdnNz796PbbjQWNKmHXBZaB9tsX');const i=exe.indexOf(marker);
+const files=Object.keys(header.files);const selected={};for(const name of ['package.json','dsh']) selected[name]=header.files[name]&&{...header.files[name],files:header.files[name].files?Object.keys(header.files[name].files):undefined};
+console.log(JSON.stringify({base,archive,archiveSize:fs.statSync(archive).size,headerBytes:size,root:files,selected,fuses:i>=0?{version:exe[i+32],length:exe[i+33],values:[...exe.subarray(i+34,i+34+exe[i+33])].map(v=>String.fromCharCode(v))}:null,integrityStringOffsets:['ElectronAsar','AsarIntegrity','app.asar'].map(s=>({s,offset:exe.indexOf(Buffer.from(s))}))},null,2));

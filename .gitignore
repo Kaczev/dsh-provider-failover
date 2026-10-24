@@ -1,0 +1,9 @@
+.runtime/
+installer-fixture/
+node_modules/
+*.tgz
+*.zip
+pack-results.json
+.desktop-candidate/
+.desktop-backup/
+real-api-results.json

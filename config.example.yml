@@ -1,0 +1,9 @@
+# 插件条目的 config 值；不是供应商配置，也不修改主地址。
+# 安装包默认禁用。只有你确认允许备用端点接收同一个 API Key 后，
+# 才把 enabled 和 confirmCredentialRecipients 都改为 true。
+providers:
+  four-router:
+    enabled: false
+    confirmCredentialRecipients: false
+    backups:
+      - https://hk.4Router.net/v1

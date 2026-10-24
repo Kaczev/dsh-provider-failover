@@ -1,0 +1,15 @@
+{
+  "version": "0.2.1-rc.2",
+  "files": [
+    {
+      "file": "@deepseek-ai/dsh-agent-loop/lib/index.js",
+      "originalSha256": "cf57e3ecd487ac5c2553455aaa5cef2c6fb41e6bd61be5aa455675d1d7193033",
+      "patchedSha256": "9427bf89e8859b9f68f46e248870c5e7da4cee46813c6556a974410c456dcbb6"
+    },
+    {
+      "file": "@deepseek-ai/dsh-llm-pi-ai/lib/index.js",
+      "originalSha256": "99b5c20830a52f69641df8a18a39206079b0c725201958cce2c4a934f1d4f7cd",
+      "patchedSha256": "7e71d0fb4e9c016383adb5db867e26433ff53cb6bcff4f0a4a502f1806961eea"
+    }
+  ]
+}

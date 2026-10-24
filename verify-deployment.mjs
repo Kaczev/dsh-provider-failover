@@ -1,0 +1,32 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+import { pathToFileURL } from 'node:url';
+import { spawnSync } from 'node:child_process';
+const root=import.meta.dirname;
+const dest=path.join(root,'.runtime/node_modules/@kaczev/dsh-provider-line-failover');
+fs.mkdirSync(dest,{recursive:true});
+fs.cpSync(path.join(root,'plugin'),dest,{recursive:true});
+const plugin=await import(pathToFileURL(path.join(dest,'index.js')));
+const events=new Map();
+await plugin.apply({on:(name,fn)=>events.set(name,fn)}, {providers:{'four-router':{enabled:true,confirmCredentialRecipients:true,backups:['https://hk.4Router.net/v1']}}});
+assert.deepEqual([...events.keys()],['llm-pi-ai/request-base-url','llm/stream']);
+const options={provider:'four-router',transportRequest:{}};
+const url=()=>events.get('llm-pi-ai/request-base-url')(options,'https://4router.net/v1',async()=> 'https://4router.net/v1');
+assert.equal(await url(),'https://4router.net/v1');
+for await(const chunk of events.get('llm/stream')(options,async function*(){yield {type:'finish',reason:{kind:'error',failure:{code:'SERVER',message:'502: mock'}}};})){}
+assert.equal(await url(),'https://hk.4router.net/v1');
+const install=(action,target)=>spawnSync(process.execPath,[path.join(root,'install-core.mjs'),action,target],{stdio:'inherit'});
+assert.equal(install('check',path.join(root,'.runtime')).status,0);
+const fixture=path.join(root,'installer-fixture');
+fs.mkdirSync(path.join(fixture,'node_modules'),{recursive:true});
+fs.writeFileSync(path.join(fixture,'package.json'),JSON.stringify({version:'0.2.1-rc.2'}));
+const manifest=JSON.parse(fs.readFileSync(path.join(root,'core/manifest.json')));
+for(const item of manifest.files){const f=path.join(fixture,'node_modules',item.file);fs.mkdirSync(path.dirname(f),{recursive:true});fs.copyFileSync(path.join(root,'core/original',item.file),f);}
+assert.equal(install('apply',fixture).status,0);
+assert.equal(install('restore',fixture).status,0);
+const first=path.join(fixture,'node_modules',manifest.files[0].file);
+fs.appendFileSync(first,'\n// local modification\n');
+assert.notEqual(install('apply',fixture).status,0);
+assert(fs.readFileSync(first,'utf8').endsWith('// local modification\n'));
+console.log('PASS plugin apply registration + route dispatch; installer check/apply/restore + checksum rejection (expected error above)');
