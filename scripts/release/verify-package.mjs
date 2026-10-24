@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+const root = path.resolve(import.meta.dirname, '../..');
+const read = name => fs.readFileSync(path.join(root, name));
+const meta = JSON.parse(read('plugin/package.json'));
+assert.equal(meta.version, '0.0.1');
+assert.equal(JSON.parse(read('package.json')).version, meta.version);
+const lock = JSON.parse(read('plugin/package-lock.json'));
+assert.equal(lock.version, meta.version); assert.equal(lock.packages[''].version, meta.version);
+for (const file of ['README.md','LICENSE']) assert.ok(read(file).equals(read('plugin/' + file)), file + ' differs');
+assert.equal(meta.publishConfig.access, 'public');
+assert.deepEqual(meta.files, ['index.js','transport.js','client.js','cordis.patch.yml','locale','icon.svg']);
+assert.equal(meta.engines.dsh, '0.2.1-rc.3');
+console.log('PASS version, publish allowlist, compatibility, README and LICENSE parity');

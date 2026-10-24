@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const source = 'C:/Users/Kaczev/AppData/Local/Programs/DeepSeek Harness/resources/app.asar/dsh';
-const target = path.join(__dirname, '.runtime');
+const source = process.argv[2] || path.join(process.env.LOCALAPPDATA, 'Programs', 'DeepSeek Harness', 'resources', 'app.asar', 'dsh');
+const target = path.resolve(__dirname, '../../.runtime');
 let count=0, bytes=0;
 function copy(src,dst) {
  const st=fs.statSync(src);

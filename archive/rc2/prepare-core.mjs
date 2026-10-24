@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-const root=import.meta.dirname;
+const root=path.resolve(import.meta.dirname,'../..');
 const runtime=path.join(root,'.runtime');
 const specs=[
  ['@deepseek-ai/dsh-agent-loop/lib/index.js', [

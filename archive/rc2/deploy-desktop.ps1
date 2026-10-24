@@ -1,6 +1,6 @@
 param([ValidateSet('check','apply','restore')][string]$Action='check')
 $ErrorActionPreference='Stop'
-$root=$PSScriptRoot
+$root=Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $manifest=Get-Content -LiteralPath (Join-Path $root '.desktop-candidate/manifest.json') -Raw | ConvertFrom-Json
 $target=[IO.Path]::GetFullPath($manifest.source)
 $expected=[IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA 'Programs/DeepSeek Harness/resources/app.asar'))

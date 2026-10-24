@@ -1,1 +1,1 @@
-{"meta":{"title":"Provider Backup Lines","description":"Use explicitly trusted backup API endpoints during existing agent retries, without changing provider settings."}}
+{"meta":{"title":"Backup Addresses","description":"Manage backup HTTPS addresses with reversible rc3 in-memory failover: retain the backup within a turn and retry primary next turn."}}

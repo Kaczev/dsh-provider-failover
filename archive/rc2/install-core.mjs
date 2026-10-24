@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-const here=path.dirname(fileURLToPath(import.meta.url));
+const here=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const [action,target]=process.argv.slice(2);
 if(!['check','apply','restore'].includes(action)||!target) throw Error('Usage: node install-core.mjs check|apply|restore <unpacked-dsh-root>');
 const root=fs.realpathSync(target);

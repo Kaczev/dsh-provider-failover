@@ -1,11 +1,35 @@
 // No fetch monkeypatching, provider re-registration, or persisted settings changes.
+import z from '@deepseek-ai/schemastery';
+
+export function normalizeBackup(value) {
+  const raw = value.trim();
+  if (!/^https:\/\//i.test(raw)) throw Error('地址必须使用 https://');
+  const url = new URL(raw);
+  if (url.username || url.password || raw.includes('@') || raw.includes('?') || raw.includes('#')) throw Error('地址不能包含账号、查询参数或锚点');
+  return url.href.replace(/\/+$/, '');
+}
+const ProviderConfig = z.transform(z.object({
+  enabled: z.boolean().default(false),
+  backups: z.array(z.string()).default([]),
+}), value => {
+  if (value.backups.length > 2) throw Error('最多添加两条备用地址');
+  const backups = value.backups.map(normalizeBackup);
+  if (new Set(backups).size !== backups.length) throw Error('备用地址重复');
+  if (value.enabled && !backups.length) throw Error('启用至少需要一条备用地址');
+  return { enabled: value.enabled, backups };
+}, true);
+export const Config = z.object({
+  providers: z.dict(ProviderConfig).default({}).volatile(),
+});
+
 export const name = 'provider-line-failover';
-export const inject = ['llm'];
+export const inject = ['settings', 'configEditor'];
 export function validate(config = {}) {
   const providers = Object.create(null);
-  for (const [id, entry] of Object.entries(config.providers ?? {})) {
+  const source = config.providers;
+  const entries = typeof source?.get === 'function' ? source.get() : source;
+  for (const [id, entry] of Object.entries(entries ?? {})) {
     if (!entry.enabled) continue;
-    if (entry.confirmCredentialRecipients !== true) throw Error('Explicit credential-recipient confirmation required: ' + id);
     if (!Array.isArray(entry.backups) || !entry.backups.length) throw Error('Missing backups: ' + id);
     const backups = entry.backups.map(value => {
       const url = new URL(value);
@@ -28,19 +52,22 @@ export function eligible(failure, signal) {
   return ['TRANSPORT','TIMEOUT'].includes(failure.code);
 }
 export function createRouter(config = {}) {
-  const providers = validate(config);
+  let providers = validate(config);
   const requests = new WeakMap();
   function state(options) {
-    const entry = providers[options.provider];
     const key = options.transportRequest;
-    if (!entry || !key || typeof key !== 'object' || options.purpose) return;
+    if (!key || typeof key !== 'object' || options.purpose) return;
     let value = requests.get(key);
+    let route = value?.get(options.provider);
+    if (route) return route;
+    const entry = providers[options.provider];
+    if (!entry) return;
     if (!value) { value = new Map(); requests.set(key, value); }
-    let route = value.get(options.provider);
-    if (!route) { route = { index: 0, backups: entry.backups }; value.set(options.provider, route); }
+    route = { index: 0, backups: entry.backups }; value.set(options.provider, route);
     return route;
   }
   return {
+    reload(nextConfig) { providers = validate(nextConfig); },
     baseURL(options, primary) { const route = state(options); return route?.index ? route.backups[route.index - 1] : primary; },
     async *stream(options, next) {
       const route = state(options);
@@ -63,10 +90,18 @@ export function createRouter(config = {}) {
     }
   };
 }
+import { installTransport } from './transport.js';
 export async function apply(ctx, config) {
-  const adapter = await import(config?.hostAdapterModuleURL ?? '@deepseek-ai/dsh-llm-pi-ai');
-  if (adapter.requestBaseURLVersion !== 1) throw Error('Requires request-base-url core patch v1 for DSH 0.2.1-rc.2; refusing to activate');
-  const router = createRouter(config);
-  ctx.on('llm-pi-ai/request-base-url', async (options, primary, next) => router.baseURL(options, await next()));
-  ctx.on('llm/stream', (options, next) => router.stream(options, next));
+  ctx.effect(() => ctx.settings.configure({ auto: false }));
+  const entries = ctx.configEditor.entries().filter(entry => entry.options.name === '@deepseek-ai/dsh-llm-pi-ai');
+  const classes = [...new Set(entries.map(entry => entry.moduleNamespace?.PiAiAdapter))];
+  if (!classes.length || classes.some(value => typeof value !== 'function')) throw Error('Active rc3 PiAiAdapter module unavailable; failover not installed');
+  const turns = new Map();
+  ctx.on('agent/request', async (payload, next) => {
+    const id = String(payload.agent.session.id);
+    if (turns.get(id)?.turn !== payload.turn) turns.set(id, { turn: payload.turn, routes: new Map() });
+    return next();
+  });
+  ctx.on('agent/disposed', ({ agent }) => turns.delete(String(agent.session.id)));
+  for (const Adapter of classes) ctx.effect(() => installTransport(Adapter, () => config.providers.get(), turns));
 }

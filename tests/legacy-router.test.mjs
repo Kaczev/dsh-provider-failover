@@ -1,11 +1,94 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { createRouter, eligible, validate } from './plugin/index.js';
-import { LlmRuntime } from './.runtime/node_modules/@deepseek-ai/dsh-llm/lib/index.js';
-import { PiAiAdapter } from './.runtime/node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/index.js';
-import { streamSimple } from './.runtime/node_modules/@earendil-works/pi-ai/dist/compat.js';
-import { apply as retryApply } from './.runtime/node_modules/@deepseek-ai/dsh-llm-retry/lib/index.js';
+import fs from 'node:fs';
+import vm from 'node:vm';
+test('client bundle uses independent settings section and rejects unsafe draft destinations', () => {
+  let definition;
+  vm.runInNewContext(fs.readFileSync('plugin/client.js', 'utf8'), { window: { __ModuleLoader__: { load: value => { definition = value; } } }, URL });
+  assert.equal(definition.id, '@kaczev/dsh-provider-line-failover');
+  const client = definition.factory(() => ({ createElement() {} }));
+  const payload = { namespaces: [], writable: true };
+  assert.equal(client.unwrapSettings({ ok: true, value: payload }), payload);
+  const written = { ns: 'fixture', revision: 'r2', value: { providers: {} } };
+  assert.equal(client.unwrapSettings({ ok: true, value: written }), written);
+  for (const code of ['settings/conflict', 'access/denied']) {
+    assert.throws(() => client.unwrapSettings({ ok: false, error: { code, message: 'fixture refusal' } }), /fixture refusal/);
+  }
+  assert.throws(() => client.unwrapSettings(undefined), /设置请求失败/);
+  const baseline = { view: { revision: 'r1', value: { providers: { p: { enabled: false, backups: [] } } } }, providers: [{ id: 'p', primary: 'https://primary.test', label: 'P' }], writable: true };
+  const unrelated = structuredClone(baseline);
+  unrelated.view.revision = 'r2';
+  unrelated.view.value.providers.other = { enabled: true, backups: ['https://other.test'] };
+  assert.equal(client.draftConflicts(baseline, unrelated, 'p'), false);
+  const changed = structuredClone(unrelated);
+  changed.view.value.providers.p.backups.push('https://changed.test');
+  assert.equal(client.draftConflicts(baseline, changed, 'p'), true);
+  const primaryChanged = structuredClone(baseline);
+  primaryChanged.providers[0].primary = 'https://new-primary.test';
+  assert.equal(client.draftConflicts(baseline, primaryChanged, 'p'), true);
+  assert.equal(client.draftConflicts(baseline, { ...baseline, providers: [] }, 'p'), true);
+  assert.equal(client.draftConflicts(baseline, { ...baseline, writable: false }, 'p'), true);
+  assert.ok(client.inject.includes('remote.settings'), 'settings endpoint must be explicitly injected');
+  const meta = JSON.parse(fs.readFileSync('plugin/package.json', 'utf8'));
+  assert.deepEqual(Array.from(client.inject), meta.dsh.client.inject);
+  assert.equal(client.normalize('https://EXAMPLE.com/v1/'), 'https://example.com/v1');
+  for (const value of ['http://bad.test', 'https://a:b@bad.test', 'https://bad.test?', 'https://bad.test#', '']) assert.throws(() => client.normalize(value));
+  const draft = backups => ({ enabled: true, confirmCredentialRecipients: true, backups });
+  assert.match(client.validateDraft(draft(['https://primary.test/v1/']), 'https://PRIMARY.test/v1').reason, /主地址/);
+  assert.match(client.validateDraft(draft(['https://a.test/', 'https://A.test']), '').reason, /重复/);
+  assert.match(client.validateDraft(draft([]), '').reason, /至少/);
+  assert.match(client.validateDraft(draft(['https://a.test','https://b.test','https://c.test']), '').reason, /两条/);
+  assert.equal(client.validateDraft(draft(['', 'https://b.test']), '').value.backups.join(), 'https://b.test');
+  assert.match(client.validateDraft(draft(['', '']), '').reason, /至少/);
+  assert.throws(() => resolveConfig({ Config }, { providers: { p: draft(['https://a.test','https://b.test','https://c.test']) } }), /两条/);
+  assert.equal(client.validateDraft({ ...draft([]), enabled: false }, '').reason, '');
+  let options;
+  client.apply({ slots: { inject: (name, callback) => { assert.equal(name, 'settings.section'); callback(); }, register: opts => { options = opts; } } });
+  assert.equal(options.id, 'kaczev-provider-line-failover');
+});
+import { createRouter, eligible, validate, Config } from '../plugin/index.js';
+import { resolveConfig } from '../.runtime/node_modules/@deepseek-ai/cordis/lib/index.js';
+import { updateVolatile } from '../.runtime/node_modules/@deepseek-ai/cosmokit/lib/index.js';
+import { LlmRuntime } from '../.runtime/node_modules/@deepseek-ai/dsh-llm/lib/index.js';
+import { PiAiAdapter } from '../.runtime/node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/index.js';
+import { streamSimple } from '../.runtime/node_modules/@earendil-works/pi-ai/dist/compat.js';
+import { apply as retryApply } from '../.runtime/node_modules/@deepseek-ai/dsh-llm-retry/lib/index.js';
+test('volatile providers reload atomically and preserve in-flight snapshots', async () => {
+  const entry = backups => ({ enabled: true, confirmCredentialRecipients: true, backups });
+  const resolved = resolveConfig({ Config }, { providers: { p: entry(['https://old.test/v1']) } });
+  assert.equal(typeof resolved.providers.get, 'function');
+  const router = createRouter(resolved);
+  const request = () => ({ provider: 'p', transportRequest: {} });
+  const fail = async options => {
+    for await (const _ of router.stream(options, async function* () {
+      yield { type: 'finish', reason: { kind: 'error', failure: { code: 'SERVER', status: 502 } } };
+    })) {}
+  };
+  const old = request();
+  router.baseURL(old, 'primary');
+  updateVolatile(resolved.providers, resolveConfig({ Config }, { providers: { p: entry(['https://new.test/v1']) } }).providers);
+  router.reload(resolved);
+  await fail(old);
+  assert.equal(router.baseURL(old, 'primary'), 'https://old.test/v1');
+  const fresh = request();
+  await fail(fresh);
+  assert.equal(router.baseURL(fresh, 'primary'), 'https://new.test/v1');
+  assert.throws(() => router.reload({ providers: { p: entry(['http://unsafe.test']) } }));
+  const afterInvalid = request();
+  await fail(afterInvalid);
+  assert.equal(router.baseURL(afterInvalid, 'primary'), 'https://new.test/v1');
+  router.reload({ providers: {} });
+  assert.equal(router.baseURL(fresh, 'primary'), 'https://new.test/v1');
+  assert.equal(router.baseURL(request(), 'primary'), 'primary');
+});
+
+test('backup URL validation rejects unsafe and duplicate destinations', () => {
+  for (const backups of [[], [''], ['http://backup.test'], ['https://user:pass@backup.test'], ['https://backup.test?q=1'], ['https://backup.test/#anchor'], ['https://BACKUP.test/v1/', 'https://backup.test/v1']]) {
+    assert.throws(() => validate({ providers: { p: { enabled: true, confirmCredentialRecipients: true, backups } } }));
+  }
+});
+
 const servers=[];const hits=[];
 async function server(handler){const s=http.createServer(async(req,res)=>{let body='';for await(const part of req)body+=part;hits.push({port:s.address().port,url:req.url,authorization:req.headers.authorization,body:JSON.parse(body)});handler(req,res);});await new Promise(r=>s.listen(0,'127.0.0.1',r));servers.push(s);return `http://127.0.0.1:${s.address().port}/v1`;}
 const success=(_req,res)=>{res.writeHead(200,{'Content-Type':'text/event-stream'});res.end('data: '+JSON.stringify({id:'mock',object:'chat.completion.chunk',choices:[{index:0,delta:{role:'assistant',content:'OK'},finish_reason:null}]})+'\n\ndata: '+JSON.stringify({choices:[{index:0,delta:{},finish_reason:'stop'}]})+'\n\ndata: [DONE]\n\n');};
@@ -35,5 +118,5 @@ test('local integration suite',async t=>{try{
  await t.test('multiple backups advance in order; trailing slash and nested URL path',async()=>{const a=await server(fail(502));const b=await server(fail(503));const start=hits.length;const result=await run(setup(a,[b,backup+'/proxy/']));assert.equal(result.length,3);assert.deepEqual(hits.slice(start).map(h=>h.port),[Number(new URL(a).port),Number(new URL(b).port),Number(new URL(backup).port)]);assert.equal(hits.at(-1).url,'/v1/proxy/chat/completions');});
  await t.test('always retries exhausted routes until cancellation; no extra plugin loop',async()=>{const a=await server(fail(502));const b=await server(fail(504));const c=new AbortController();const timer=setTimeout(()=>c.abort(),100);const start=hits.length;try{await run(setup(a,[b]),{signal:c.signal,policy:{...normal,mode:'always',initialDelayMs:30,maxDelayMs:30}});}finally{clearTimeout(timer);}assert(hits.length-start>=2);assert(hits.slice(start+1).every(h=>h.port===Number(new URL(b).port)));});
  await t.test('disabled/unconfigured providers remain primary',()=>{const r=createRouter({providers:{'four-router':{enabled:false}}});assert.equal(r.baseURL({provider:'four-router',transportRequest:{}},'primary'),'primary');assert.equal(r.baseURL({provider:'other',transportRequest:{}},'other'),'other');});
- await t.test('trust validation / status-body confusion',()=>{assert.throws(()=>validate({providers:{p:{enabled:true,backups:['https://backup.test']}}}));assert.throws(()=>validate({providers:{p:{enabled:true,confirmCredentialRecipients:true,backups:['http://evil.test']}}}));assert.equal(eligible({code:'SERVER',message:'500 body contains 502'}),false);});
+ await t.test('trust validation / status-body confusion',()=>{assert.doesNotThrow(()=>validate({providers:{p:{enabled:true,backups:['https://backup.test']}}}));assert.throws(()=>validate({providers:{p:{enabled:true,confirmCredentialRecipients:true,backups:['http://evil.test']}}}));assert.equal(eligible({code:'SERVER',message:'500 body contains 502'}),false);});
  }finally{for(const s of servers){s.closeAllConnections();await new Promise(r=>s.close(r));}}});

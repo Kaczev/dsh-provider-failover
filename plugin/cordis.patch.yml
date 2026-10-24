@@ -2,10 +2,4 @@
     - id: kaczev-provider-line-failover
       name: '@kaczev/dsh-provider-line-failover'
       config:
-        hostAdapterModuleURL: 'file:///C:/Users/Kaczev/AppData/Local/Programs/DeepSeek%20Harness/resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-llm-pi-ai/lib/index.js'
-        providers:
-          four-router:
-            enabled: true
-            confirmCredentialRecipients: true
-            backups:
-              - https://hk.4Router.net/v1
+        providers: {}

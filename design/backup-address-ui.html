@@ -1,0 +1,1140 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>备用地址 UI · DSH 模型设置原型</title>
+<style>
+  :root {
+    --page: #2c2c2e;
+    --card: #2c2c2e;
+    --module: #353638;
+    --input: #232324;
+    --card-stroke: #ffffff24;
+    --border-3: #ffffff29;
+    --border-4: #ffffff33;
+    --label-1: #f9fafb;
+    --label-2: #cfd3d6;
+    --label-3: #adb2b8;
+    --dim: #81858c;
+    --success: #22c55e;
+    --error: #f25a5a;
+    --business: #7aaaff;
+    --hover: #ffffff14;
+    --hover-danger: #ef444426;
+    --r-xl: 20px;
+    --r-lg: 16px;
+    --r-md: 12px;
+    --r-sm: 8px;
+    --r-xs: 4px;
+    --font: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --mono: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--page);
+    color: var(--label-1);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body { padding: 28px 0 120px; }
+
+  button, input, select { font: inherit; }
+
+  .section {
+    width: min(720px, calc(100vw - 40px));
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 24px;
+    color: var(--label-1);
+  }
+
+  .intro {
+    margin: 0;
+    font-size: 14px;
+    line-height: 22px;
+    color: var(--label-3);
+  }
+
+  .rows {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .rowCard {
+    border: 0.5px solid var(--card-stroke);
+    background: var(--card);
+    border-radius: var(--r-xl);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .rowHead { display: flex; align-items: center; gap: 10px; }
+
+  .rowIdentity { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+
+  .rowName { font-size: 14px; font-weight: 500; line-height: 22px; }
+
+  .rowTag {
+    border: 0.5px solid var(--border-3);
+    border-radius: var(--r-xs);
+    color: var(--label-2);
+    font-size: 11px;
+    line-height: 16px;
+    padding: 1px 6px;
+    flex: none;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--success);
+    flex: none;
+  }
+
+  .rowActions { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; }
+
+  .btn {
+    height: 28px;
+    padding: 0 10px;
+    border-radius: var(--r-sm);
+    border: 0.5px solid var(--border-3);
+    background: transparent;
+    color: var(--label-1);
+    font-size: 12px;
+    line-height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+
+  .btn:hover:not(:disabled) { background: var(--hover); }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+
+  .btn.danger {
+    border: none;
+    color: var(--error);
+    padding: 0 10px;
+  }
+
+  .btn.danger:hover:not(:disabled) { background: var(--hover-danger); }
+
+  .btn.primary, .btn.secondary {
+    height: 36px;
+    padding: 0 14px;
+    border-radius: var(--r-md);
+    font-size: 14px;
+    line-height: 22px;
+  }
+
+  .btn.primary {
+    background: var(--label-1);
+    border-color: var(--label-1);
+    color: #0f1115;
+    font-weight: 500;
+  }
+
+  .btn.primary:hover:not(:disabled) { background: #e9ecf2; }
+
+  .btn.secondary { border: 0.5px solid var(--border-3); }
+
+  .btn:focus-visible,
+  .iconBtn:focus-visible,
+  .linkBtn:focus-visible,
+  .help:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--business);
+    outline-offset: 2px;
+  }
+
+  .editor {
+    background: var(--module);
+    border-radius: var(--r-lg);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .editorHeader { display: flex; align-items: baseline; gap: 8px; }
+
+  .editorTitle { font-size: 14px; font-weight: 500; line-height: 22px; }
+
+  .editorRoute { font-size: 12px; line-height: 18px; color: var(--label-3); font-family: var(--mono); }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  .fieldLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--label-2);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+  }
+
+  .help {
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border: 0.5px solid var(--border-3);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--label-3);
+    font-size: 11px;
+    line-height: 15px;
+    text-align: center;
+    cursor: help;
+  }
+
+  .help:hover { color: var(--label-1); border-color: var(--label-3); }
+
+  .input {
+    width: 100%;
+    height: 32px;
+    padding: 0 10px;
+    background: var(--input);
+    border: 0.5px solid var(--border-4);
+    border-radius: var(--r-md);
+    color: var(--label-1);
+    font-size: 14px;
+    line-height: 22px;
+  }
+
+  .input::placeholder { color: var(--dim); }
+
+  .input:focus {
+    border-color: var(--business);
+    outline: none;
+  }
+
+  .input:disabled { opacity: 0.55; cursor: default; }
+
+  .input.invalid { border-color: var(--error); }
+
+  select.input {
+    appearance: none;
+    cursor: pointer;
+    max-width: 240px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%2381858C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 12px 12px;
+    padding-right: 32px;
+  }
+
+  details.customized {
+    border-top: 0.5px solid var(--border-3);
+    padding-top: 10px;
+  }
+
+  summary.customizedSummary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+    margin-left: -4px;
+    padding: 2px 4px;
+    border-radius: var(--r-sm);
+    color: var(--label-2);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  summary.customizedSummary::-webkit-details-marker { display: none; }
+
+  summary.customizedSummary::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(-45deg) translate(-1px, -1px);
+    transition: transform 0.12s;
+  }
+
+  details[open] > summary.customizedSummary::before {
+    transform: rotate(45deg) translate(-1px, -1px);
+  }
+
+  summary.customizedSummary:hover { color: var(--label-1); }
+
+  .customizedBody {
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .editorActions { display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+
+  .divider { border-top: 0.5px solid var(--border-4); }
+
+  .addButton {
+    height: 44px;
+    width: 100%;
+    border: 1px dashed var(--border-3);
+    border-radius: var(--r-lg);
+    background: transparent;
+    color: var(--label-1);
+    font-size: 14px;
+    line-height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+
+  .addButton:hover { background: var(--hover); }
+
+  /* ── Backup-address block ─────────────────────────────────────────── */
+
+  .ba {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-top: 0.5px solid var(--border-3);
+    padding-top: 12px;
+  }
+
+  .ba.in-slot {
+    border-top: none;
+    padding: 2px 2px 0;
+  }
+
+  #hostSlot:empty { display: none; }
+
+  .baHead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  .baTitleRow { display: inline-flex; align-items: center; gap: 8px; }
+
+  .baTitle { font-size: 14px; font-weight: 500; line-height: 22px; }
+
+  .baTag {
+    border: 0.5px solid var(--business);
+    color: var(--business);
+    border-radius: var(--r-xs);
+    font-size: 11px;
+    line-height: 16px;
+    padding: 1px 6px;
+    flex: none;
+  }
+
+  .baToggle {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--label-2);
+    font-size: 12px;
+    line-height: 18px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .switch {
+    position: relative;
+    inline-size: 34px;
+    block-size: 20px;
+    border-radius: 999px;
+    border: 0.5px solid var(--border-3);
+    background: #ffffff1f;
+    transition: background 0.15s ease;
+    flex: none;
+  }
+
+  .switch::after {
+    content: "";
+    position: absolute;
+    inset: 2px auto 2px 2px;
+    inline-size: 15px;
+    block-size: 15px;
+    border-radius: 50%;
+    background: var(--label-3);
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+
+  input:checked + .switch { background: var(--label-1); border-color: var(--label-1); }
+
+  input:checked + .switch::after { transform: translateX(14px); background: #0f1115; }
+
+  input:focus-visible + .switch { outline: 2px solid var(--business); outline-offset: 2px; }
+
+  input:disabled + .switch { opacity: 0.45; cursor: default; }
+
+  .baDesc { margin: 0; color: var(--label-3); font-size: 12px; line-height: 18px; }
+
+  .baList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .baRow { display: flex; align-items: flex-start; gap: 8px; }
+
+  .baIndex {
+    flex: none;
+    width: 20px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--label-3);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .baFieldWrap { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+
+  .baMeta { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+  .baError { margin: 0; color: var(--error); font-size: 12px; line-height: 18px; }
+
+  .baHintInline { margin: 0; color: var(--label-3); font-size: 12px; line-height: 18px; }
+
+  .baActions { display: inline-flex; align-items: center; gap: 2px; padding-top: 2px; }
+
+  .iconBtn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--label-3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .iconBtn:hover:not(:disabled) { background: var(--hover); color: var(--label-1); }
+
+  .iconBtn.danger:hover:not(:disabled) { background: var(--hover-danger); color: var(--error); }
+
+  .iconBtn:disabled { opacity: 0.3; cursor: default; }
+
+  .baAdd {
+    align-self: flex-start;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: var(--r-sm);
+    border: none;
+    background: transparent;
+    color: var(--label-2);
+    font-size: 12px;
+    line-height: 18px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    margin-left: 28px;
+  }
+
+  .baAdd:hover:not(:disabled) { background: var(--hover); color: var(--label-1); }
+
+  .baAdd:disabled { opacity: 0.4; cursor: default; }
+
+  .baEmpty {
+    margin-left: 28px;
+    border: 1px dashed var(--border-3);
+    border-radius: var(--r-md);
+    padding: 10px 12px;
+    color: var(--label-3);
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .baConsent {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    color: var(--label-2);
+    font-size: 12px;
+    line-height: 18px;
+    cursor: pointer;
+    margin-left: 0;
+  }
+
+  .baConsent input {
+    margin: 2px 0 0;
+    width: 14px;
+    height: 14px;
+    accent-color: var(--business);
+    flex: none;
+  }
+
+  .baConsent input:disabled { opacity: 0.45; }
+
+  .baConsent.disabled { color: var(--label-3); cursor: default; }
+
+  .baNote {
+    margin: 0;
+    color: var(--label-3);
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .baNotice { margin: 0; color: var(--label-3); font-size: 12px; line-height: 18px; }
+
+  .baStatus {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--success);
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .baReadonly .baIndex { color: var(--dim); }
+
+  .marked { outline: 1px dashed var(--error); outline-offset: 6px; border-radius: 6px; }
+
+  .markTag { border-color: var(--error); color: var(--error); }
+
+  /* ── Review chrome (not part of the product UI) ───────────────────── */
+
+  .review {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    width: 268px;
+    background: #1b1b1cf2;
+    border: 0.5px solid var(--border-4);
+    border-radius: var(--r-lg);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 12px;
+    line-height: 18px;
+    color: var(--label-2);
+    box-shadow: 0 12px 32px #0008;
+    backdrop-filter: blur(8px);
+    z-index: 20;
+  }
+
+  .reviewHead { display: flex; align-items: center; justify-content: space-between; }
+
+  .reviewHead strong { font-size: 12px; font-weight: 500; color: var(--label-1); }
+
+  .reviewRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+  .reviewRow > span { color: var(--label-3); flex: none; }
+
+  .seg { display: inline-flex; border: 0.5px solid var(--border-4); border-radius: var(--r-sm); overflow: hidden; }
+
+  .seg button {
+    border: none;
+    background: transparent;
+    color: var(--label-2);
+    font-size: 11px;
+    line-height: 16px;
+    padding: 4px 8px;
+    cursor: pointer;
+  }
+
+  .seg button + button { border-left: 0.5px solid var(--border-4); }
+
+  .seg button.on { background: #ffffff1f; color: var(--label-1); }
+
+  .review select {
+    height: 24px;
+    border: 0.5px solid var(--border-4);
+    background: #232324;
+    color: var(--label-1);
+    border-radius: 6px;
+    font-size: 11px;
+    padding: 0 6px;
+  }
+
+  .review label.check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; justify-content: flex-start; }
+
+  .review input[type="checkbox"] { accent-color: var(--business); margin: 0; }
+
+  .review .foot { color: var(--dim); font-size: 11px; line-height: 16px; }
+
+  @media (max-width: 560px) {
+    .baRow { flex-wrap: wrap; }
+    .baFieldWrap { flex: 1 1 calc(100% - 28px); }
+    .baActions { margin-left: 28px; }
+    .baAdd { margin-left: 0; }
+    .baEmpty { margin-left: 0; }
+    .review { inset: auto 8px 8px; width: auto; }
+  }
+</style>
+</head>
+<body>
+  <section class="section" aria-label="模型设置">
+    <h2 class="title">模型</h2>
+    <p class="intro">填入各提供商的 API 密钥即可使用其模型。</p>
+
+    <ul class="rows">
+      <li class="rowCard">
+        <div class="rowHead">
+          <span class="rowIdentity">
+            <span class="rowName">DeepSeek</span>
+            <span class="dot" role="img" aria-label="API 密钥已配置"></span>
+          </span>
+          <span class="rowActions">
+            <button class="btn" type="button">编辑</button>
+          </span>
+        </div>
+      </li>
+
+      <li class="rowCard">
+        <div class="rowHead">
+          <span class="rowIdentity">
+            <span class="rowName">4Router GPT</span>
+            <span class="rowTag">自定义</span>
+            <span class="dot" role="img" aria-label="API 密钥已配置"></span>
+          </span>
+          <span class="rowActions">
+            <button class="btn" type="button" id="providerEditToggle" aria-expanded="true" aria-controls="providerEditor">收起</button>
+            <button class="btn danger" type="button">删除</button>
+          </span>
+        </div>
+
+        <!-- Official slot seat: settings.models.provider-card (renders here, above the editor) -->
+        <div id="hostSlot"></div>
+
+        <div class="editor" id="providerEditor">
+          <div class="editorHeader">
+            <span class="editorTitle">4Router GPT</span>
+            <span class="editorRoute">four-router</span>
+          </div>
+
+          <div class="field">
+            <span class="fieldLabel">API 密钥
+              <button class="help" type="button" title="保存在系统凭据中；此处留空表示沿用已保存的密钥。">?</button>
+            </span>
+            <input class="input" type="text" placeholder="留空使用已保存凭据" aria-label="API 密钥">
+          </div>
+
+          <details class="customized" id="customSettings">
+            <summary class="customizedSummary">自定义设置</summary>
+            <div class="customizedBody">
+              <div class="field">
+                <span class="fieldLabel">显示名称</span>
+                <input class="input" type="text" value="4Router GPT" aria-label="显示名称">
+              </div>
+              <div class="field">
+                <span class="fieldLabel">API 地址</span>
+                <input class="input" type="text" value="https://4router.net/v1" aria-label="API 地址">
+              </div>
+              <div class="field">
+                <span class="fieldLabel">API 协议</span>
+                <select class="input" aria-label="API 协议">
+                  <option>OpenAI Chat Completions</option>
+                  <option>OpenAI Responses</option>
+                  <option>Anthropic Messages</option>
+                </select>
+              </div>
+              <!-- Backup addresses belong to the custom-settings disclosure. -->
+              <div id="hostInside"></div>
+            </div>
+          </details>
+
+          <div class="divider"></div>
+
+          <div class="editorActions">
+            <span id="saveStatus" aria-live="polite"></span>
+            <button class="btn secondary" type="button" id="cancelBtn">取消</button>
+            <button class="btn primary" type="button" id="saveBtn">保存</button>
+          </div>
+        </div>
+      </li>
+    </ul>
+
+    <button class="addButton" type="button">+ 添加模型提供商</button>
+  </section>
+
+  <aside class="review" aria-label="原型控制（不属于产品界面）">
+    <div class="reviewHead"><strong>原型控制</strong><span class="foot">非常规界面</span></div>
+    <div class="reviewRow">
+      <span>位置</span>
+      <div class="seg" role="group" aria-label="渲染位置">
+        <button type="button" data-pos="inside" class="on">编辑区内</button>
+        <button type="button" data-pos="slot">卡片头部</button>
+      </div>
+    </div>
+    <div class="reviewRow">
+      <span>保存方式</span>
+      <div class="seg" role="group" aria-label="保存方式">
+        <button type="button" data-save-mode="unified" class="on">统一保存</button>
+        <button type="button" data-save-mode="separate">单独保存</button>
+      </div>
+    </div>
+    <p id="saveModeExplanation" class="foot" style="margin:0">统一保存：备用地址没有自己的保存按钮；校验不通过时，底部保存也不能点击。取消会丢弃本次编辑。</p>
+    <div class="reviewRow">
+      <span>状态</span>
+      <select id="preset">
+        <option value="default">默认</option>
+        <option value="off">未启用</option>
+        <option value="invalid">校验错误</option>
+        <option value="empty">空列表</option>
+        <option value="readonly">只读</option>
+        <option value="saving">保存中</option>
+      </select>
+    </div>
+    <div class="reviewRow">
+      <span>收起状态</span>
+      <select id="collapsePreset" aria-label="收起状态">
+        <option value="custom">自定义设置收起</option>
+        <option value="expanded">全部展开</option>
+        <option value="card">供应商卡片收起</option>
+      </select>
+    </div>
+    <p class="foot" style="margin:0">本次示意：备用地址位于「自定义设置」内部，与名称、主地址和协议一起展开、收起；收起供应商卡片则隐藏整个编辑区。</p>
+    <label class="check reviewRow"><input type="checkbox" id="mark"> 显示标注</label>
+    <div class="foot">「编辑区内」需要给官方客户端补一处 slot 调用；「卡片头部」是官方已开放的槽位，但卡片收起时同样会渲染。</div>
+  </aside>
+
+<script>
+(() => {
+  const PRIMARY = "https://4router.net/v1";
+  const PROVIDER = "4Router GPT";
+
+  const hostInside = document.getElementById("hostInside");
+  const hostSlot = document.getElementById("hostSlot");
+  const saveBtn = document.getElementById("saveBtn");
+  const cancelBtn = document.getElementById("cancelBtn");
+  const saveStatus = document.getElementById("saveStatus");
+  const presetSelect = document.getElementById("preset");
+  const markToggle = document.getElementById("mark");
+
+  let position = "inside";
+  let saveMode = "unified";
+  let committedBackups = null;
+  let marked = false;
+  let statusTimer = null;
+
+  const initial = () => ({
+    enabled: true,
+    consent: true,
+    readOnly: false,
+    saving: false,
+    saved: false,
+    showAllErrors: false,
+    backups: [{ url: "https://hk.4Router.net/v1", touched: false }]
+  });
+
+  let state = initial();
+  let panel = null;
+  let uid = 0;
+  let presetToken = 0;
+
+  function norm(raw) {
+    try {
+      const u = new URL(raw.trim());
+      const host = u.host.toLowerCase();
+      const path = u.pathname.replace(/\/+$/, "");
+      return host + path;
+    } catch {
+      return null;
+    }
+  }
+
+  function rowError(backup, index) {
+    const raw = backup.url.trim();
+    if (raw === "") return "请填写地址，或删除这一行";
+    let u;
+    try {
+      u = new URL(raw);
+    } catch {
+      return "请输入完整地址，例如 https://hk.example.com/v1";
+    }
+    if (u.protocol !== "https:") return "地址必须使用 https://";
+    if (u.username || u.password) return "地址不能包含账号或密码";
+    if (u.search || u.hash) return "地址不能包含查询参数或锚点";
+    const target = norm(raw);
+    if (target === norm(PRIMARY)) return "与主地址相同，无需填写";
+    for (let i = 0; i < state.backups.length; i += 1) {
+      if (i === index) continue;
+      if (norm(state.backups[i].url) === target) return `与第 ${i + 1} 条备用地址重复`;
+    }
+    return null;
+  }
+
+  function errors() {
+    return state.backups.map((backup, index) => rowError(backup, index));
+  }
+
+  function blockedReason() {
+    if (state.readOnly) return "当前部署的设置文档为只读";
+    if (state.saving) return null;
+    if (errors().some(Boolean)) return "请先修正备用地址";
+    if (state.enabled && state.backups.length === 0) return "启用故障切换需要至少一条备用地址";
+    return null;
+  }
+
+  function refreshActionState() {
+    const reason = blockedReason();
+    const target = saveMode === "separate" ? panel?.querySelector("#backupSaveBtn") : saveBtn;
+    if (target) {
+      target.disabled = state.saving || reason !== null;
+      target.title = reason || "";
+      target.textContent = state.saving ? "保存中…" : saveMode === "separate" ? "保存备用地址" : "保存";
+      target.setAttribute("aria-disabled", String(target.disabled));
+    }
+    if (saveMode === "separate") {
+      saveBtn.disabled = state.readOnly;
+      saveBtn.title = "仅保存上方供应商设置，不保存备用地址";
+      saveBtn.textContent = "保存供应商设置";
+      saveBtn.setAttribute("aria-disabled", String(saveBtn.disabled));
+    }
+  }
+
+  function icon(name) {
+    const paths = {
+      up: '<path d="M4 7l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 3v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+      down: '<path d="M4 9l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 13V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+      trash: '<path d="M3.5 4.5h9M6.5 4.5V3.5h3v1M5 4.5l.5 8h5l.5-8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>'
+    };
+    return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">${paths[name]}</svg>`;
+  }
+
+  function renderPanel() {
+    if (!panel) return;
+    const errs = errors();
+    const disabled = state.readOnly || state.saving;
+    const rows = state.backups.map((backup, index) => {
+      const error = (backup.touched || state.showAllErrors) ? rowError(backup, index) : null;
+      const invalidClass = error ? " invalid" : "";
+      const describedBy = error ? ` aria-describedby="baErr${index}" aria-invalid="true"` : "";
+      const first = index === 0;
+      const last = index === state.backups.length - 1;
+      return `
+        <li class="baRow">
+          <span class="baIndex" aria-hidden="true">${index + 1}</span>
+          <div class="baFieldWrap">
+            <input class="input baInput${invalidClass}" type="text" value="${escapeAttr(backup.url)}"
+              placeholder="https://hk.example.com/v1" data-index="${index}" aria-label="备用地址 ${index + 1}"${describedBy}
+              ${disabled ? "disabled" : ""}>
+            ${error ? `<p class="baError" id="baErr${index}" role="alert">${escapeHtml(error)}</p>` : ""}
+          </div>
+          <div class="baActions">
+            <button class="iconBtn" type="button" data-move="${index}:up" title="上移" aria-label="上移第 ${index + 1} 条" ${disabled || first ? "disabled" : ""}>${icon("up")}</button>
+            <button class="iconBtn" type="button" data-move="${index}:down" title="下移" aria-label="下移第 ${index + 1} 条" ${disabled || last ? "disabled" : ""}>${icon("down")}</button>
+            <button class="iconBtn danger" type="button" data-remove="${index}" title="删除" aria-label="删除第 ${index + 1} 条" ${disabled ? "disabled" : ""}>${icon("trash")}</button>
+          </div>
+        </li>`;
+    }).join("");
+
+    const empty = state.backups.length === 0;
+    panel.classList.toggle("baReadonly", state.readOnly);
+    panel.innerHTML = `
+      <div class="baHead">
+        <span class="baTitleRow">
+          <span class="baTitle">备用地址</span>
+          <span class="baTag">故障切换</span>
+          <button class="help" type="button" title="主地址失败时按顺序尝试。备用地址会收到同一个 API Key，请只填写你信任的域名。">?</button>
+        </span>
+        <label class="baToggle">
+          启用
+          <input type="checkbox" id="baEnabled" ${state.enabled ? "checked" : ""} ${disabled ? "disabled" : ""} style="position:absolute;opacity:0;pointer-events:none">
+          <span class="switch" aria-hidden="true"></span>
+        </label>
+      </div>
+      ${!state.enabled ? '<p class="baNotice">故障切换已关闭；保存后只使用主地址，已填写的地址会保留。</p>' : ""}
+      ${state.readOnly ? '<p class="baNotice">当前部署的设置文档为只读。</p>' : ""}
+      ${empty
+        ? `<p class="baEmpty">还没有备用地址。${state.enabled ? "启用故障切换至少需要一条地址。" : "主地址失败时，请求会直接报错。"}</p>`
+        : `<ul class="baList" aria-label="备用地址列表">${rows}</ul>`}
+      <button class="baAdd" type="button" id="baAdd" ${disabled ? "disabled" : ""}>+ 添加备用地址</button>
+      ${saveMode === "separate" ? '<div class="editorActions"><span id="backupSaveStatus" aria-live="polite"></span><button class="btn primary" type="button" id="backupSaveBtn">保存备用地址</button></div><p class="baNotice">此按钮只保存备用地址；底部按钮只保存供应商设置。已单独保存的备用地址，不会被底部「取消」撤销。</p>' : ''}
+    `;
+    panel.querySelector("#backupSaveBtn")?.addEventListener("click", save);
+
+    panel.querySelector("#baEnabled").addEventListener("change", (event) => {
+      state.enabled = event.target.checked;
+      state.showAllErrors = false;
+      renderPanel();
+    });
+
+    panel.querySelectorAll(".baInput").forEach((input) => {
+      input.addEventListener("input", (event) => {
+        const index = Number(event.target.dataset.index);
+        state.backups[index].url = event.target.value;
+        state.saved = false;
+        const error = rowError(state.backups[index], index);
+        const wrap = event.target.parentElement;
+        const existing = wrap.querySelector(".baError");
+        event.target.classList.toggle("invalid", Boolean(error) && state.backups[index].touched);
+        if (existing) existing.remove();
+        if (error && state.backups[index].touched) {
+          const p = document.createElement("p");
+          p.className = "baError";
+          p.id = `baErr${index}`;
+          p.setAttribute("role", "alert");
+          p.textContent = error;
+          wrap.appendChild(p);
+          event.target.setAttribute("aria-invalid", "true");
+        } else {
+          event.target.removeAttribute("aria-invalid");
+        }
+        refreshActionState();
+      });
+      input.addEventListener("blur", (event) => {
+        const index = Number(event.target.dataset.index);
+        state.backups[index].touched = true;
+        renderPanel();
+      });
+    });
+
+    panel.querySelectorAll("[data-move]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const [rawIndex, direction] = button.dataset.move.split(":");
+        const index = Number(rawIndex);
+        const target = direction === "up" ? index - 1 : index + 1;
+        if (target < 0 || target >= state.backups.length) return;
+        const copy = [...state.backups];
+        [copy[index], copy[target]] = [copy[target], copy[index]];
+        state.backups = copy;
+        state.saved = false;
+        renderPanel();
+        panel.querySelector(`.baInput[data-index="${target}"]`)?.focus();
+      });
+    });
+
+    panel.querySelectorAll("[data-remove]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.backups.splice(Number(button.dataset.remove), 1);
+        state.saved = false;
+        renderPanel();
+      });
+    });
+
+    panel.querySelector("#baAdd").addEventListener("click", () => {
+      state.backups.push({ url: "", touched: false });
+      state.saved = false;
+      renderPanel();
+      const inputs = panel.querySelectorAll(".baInput");
+      inputs[inputs.length - 1]?.focus();
+    });
+
+    panel.querySelector("#baConsent")?.addEventListener("change", (event) => {
+      state.consent = event.target.checked;
+      state.saved = false;
+      refreshActionState();
+    });
+
+    refreshActionState();
+    applyMark();
+  }
+
+  function escapeHtml(value) {
+    return value.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function escapeAttr(value) {
+    return escapeHtml(value);
+  }
+
+  function mountPanel() {
+    panel = document.createElement("section");
+    panel.className = "ba";
+    panel.setAttribute("aria-labelledby", "baTitle");
+    panel.innerHTML = "";
+    panel.id = "baPanel";
+    if (position === "inside") hostInside.appendChild(panel);
+    else hostSlot.appendChild(panel);
+    panel.classList.toggle("in-slot", position === "slot");
+    renderPanel();
+    applyMark();
+  }
+
+  function applyMark() {
+    if (!panel) return;
+    panel.classList.toggle("marked", marked);
+    panel.querySelector(".markTag")?.remove();
+    if (marked) {
+      const tag = document.createElement("span");
+      tag.className = "baTag markTag";
+      tag.textContent = "新增区域";
+      panel.querySelector(".baTitleRow")?.appendChild(tag);
+    }
+  }
+
+  function setStatus(text, kind) {
+    saveStatus.innerHTML = "";
+    if (!text) return;
+    const span = document.createElement("span");
+    span.className = kind === "success" ? "baStatus" : "baNotice";
+    span.textContent = text;
+    saveStatus.appendChild(span);
+  }
+
+  async function save() {
+    if (blockedReason() !== null) {
+      state.showAllErrors = true;
+      renderPanel();
+      return;
+    }
+    state.saving = true;
+    state.saved = false;
+    renderPanel();
+    await new Promise((resolve) => setTimeout(resolve, 650));
+    state.saving = false;
+    state.saved = true;
+    committedBackups = structuredClone(state);
+    renderPanel();
+    if (saveMode === "separate") {
+      panel.querySelector("#backupSaveStatus").textContent = "备用地址已保存";
+    } else {
+      setStatus("已保存", "success");
+    }
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(() => setStatus(""), 2600);
+  }
+
+  function applyPreset(name) {
+    state = initial();
+    state.consent = true;
+    if (name === "off") {
+      state.enabled = false;
+      state.consent = false;
+    }
+    if (name === "invalid") {
+      state.showAllErrors = true;
+      state.backups = [
+        { url: "http://hk.example.com/v1", touched: true },
+        { url: "https://4router.net/v1/", touched: true }
+      ];
+    }
+    if (name === "empty") {
+      state.backups = [];
+    }
+    if (name === "readonly") {
+      state.readOnly = true;
+    }
+    if (name === "saving") {
+      state.saving = true;
+    }
+    clearTimeout(statusTimer);
+    setStatus("");
+    mountPanel();
+    if (name === "saving") {
+      const token = ++presetToken;
+      setTimeout(() => {
+        if (token !== presetToken) return;
+        state.saving = false;
+        state.saved = true;
+        renderPanel();
+        setStatus("已保存", "success");
+      }, 900);
+    } else {
+      presetToken += 1;
+    }
+  }
+
+  saveBtn.addEventListener("click", () => {
+    if (saveMode === "unified") return save();
+    setStatus("供应商设置已保存；备用地址未由此按钮保存", "success");
+  });
+
+  cancelBtn.addEventListener("click", () => {
+    if (saveMode === "separate" && committedBackups) {
+      state = structuredClone(committedBackups);
+      renderPanel();
+      setStatus("已取消未保存编辑；单独保存的备用地址仍保留");
+    } else {
+      applyPreset(presetSelect.value);
+      setStatus("已取消本次编辑");
+    }
+  });
+
+  document.querySelectorAll("[data-save-mode]").forEach((button) => {
+    button.addEventListener("click", () => {
+      saveMode = button.dataset.saveMode;
+      committedBackups = null;
+      document.querySelectorAll("[data-save-mode]").forEach(other => other.classList.toggle("on", other === button));
+      document.getElementById("saveModeExplanation").textContent = saveMode === "unified"
+        ? "统一保存：备用地址没有自己的保存按钮；校验不通过时，底部保存也不能点击。取消会丢弃本次编辑。"
+        : "单独保存：多一个「保存备用地址」按钮。备用地址无效也不影响底部保存；已经单独保存后，底部取消不会撤销它。";
+      setStatus("");
+      renderPanel();
+    });
+  });
+
+  document.querySelectorAll("[data-pos]").forEach((button) => {
+    button.addEventListener("click", () => {
+      document.querySelectorAll("[data-pos]").forEach((other) => other.classList.toggle("on", other === button));
+      position = button.dataset.pos;
+      mountPanel();
+    });
+  });
+
+  presetSelect.addEventListener("change", () => applyPreset(presetSelect.value));
+
+  markToggle.addEventListener("change", () => {
+    marked = markToggle.checked;
+    applyMark();
+  });
+
+  const collapsePreset = document.getElementById("collapsePreset");
+  const customSettings = document.getElementById("customSettings");
+  const providerEditor = document.getElementById("providerEditor");
+  const providerEditToggle = document.getElementById("providerEditToggle");
+  function setCollapse(mode) {
+    providerEditor.hidden = mode === "card";
+    providerEditor.style.display = mode === "card" ? "none" : "";
+    customSettings.open = mode === "expanded";
+    providerEditToggle.textContent = mode === "card" ? "编辑" : "收起";
+    providerEditToggle.setAttribute("aria-expanded", String(mode !== "card"));
+    collapsePreset.value = mode;
+  }
+  collapsePreset.addEventListener("change", () => setCollapse(collapsePreset.value));
+  providerEditToggle.addEventListener("click", () => setCollapse(providerEditor.hidden ? "custom" : "card"));
+  customSettings.addEventListener("toggle", () => {
+    if (!providerEditor.hidden) collapsePreset.value = customSettings.open ? "expanded" : "custom";
+  });
+  const params = new URLSearchParams(location.search);
+  setCollapse(["expanded", "card"].includes(params.get("collapse")) ? params.get("collapse") : "custom");
+  if (params.get("pos") === "slot") {
+    position = "slot";
+    document.querySelectorAll(".seg button").forEach((button) => {
+      button.classList.toggle("on", button.dataset.pos === position);
+    });
+  }
+  marked = params.get("mark") === "1";
+  markToggle.checked = marked;
+  const initialPreset = ["off", "invalid", "empty", "readonly", "saving"].includes(params.get("state"))
+    ? params.get("state")
+    : "default";
+  presetSelect.value = initialPreset;
+  applyPreset(initialPreset);
+})();
+</script>
+</body>
+</html>

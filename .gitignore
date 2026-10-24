@@ -7,3 +7,8 @@ pack-results.json
 .desktop-candidate/
 .desktop-backup/
 real-api-results.json
+/不入库文件夹/
+/artifacts/
+.env
+.env.*
+*.log

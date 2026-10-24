@@ -1,12 +1,16 @@
 {
   "name": "dsh-provider-failover-workspace",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test test.mjs",
-    "check": "node --check plugin/index.js && node --test test.mjs && node verify-deployment.mjs",
-    "pack:plugin": "npm pack ./plugin",
-    "verify:link": "node verify-link.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "check": "node --check plugin/index.js && node --check plugin/transport.js && node --check plugin/client.js && npm test && node scripts/checks/verify-deployment.mjs && node scripts/release/verify-package.mjs",
+    "test:settings": "node scripts/checks/verify-settings-write.mjs",
+    "verify:link": "node scripts/checks/verify-link.mjs",
+    "verify:package": "node scripts/release/verify-package.mjs",
+    "sync:readme": "node scripts/release/sync-readme.mjs",
+    "pack:plugin": "npm run sync:readme && npm run verify:package && npm pack ./plugin --pack-destination artifacts"
   },
   "engines": { "node": ">=22" }
 }

@@ -1,11 +1,18 @@
 {
   "name": "@kaczev/dsh-provider-line-failover",
-  "version": "0.1.0",
-  "description": "Request-local provider API line failover for patched DSH 0.2.1-rc.2",
+  "version": "0.0.1",
+  "description": "Backup address settings and reversible per-turn pi-ai failover for DSH 0.2.1-rc.3",
   "type": "module",
-  "exports": {".": "./index.js", "./locale/*.json": "./locale/*.json", "./icon": "./icon.svg"},
-  "files": ["index.js", "cordis.patch.yml", "locale", "icon.svg"],
-  "engines": {"dsh": "0.2.1-rc.2"},
-  "dsh": {"bundle": {"patch": "cordis.patch.yml"}},
-  "license": "MIT"
+  "exports": {".": "./index.js", "./client": "./client.js", "./locale/*.json": "./locale/*.json", "./icon": "./icon.svg"},
+  "files": ["index.js", "transport.js", "client.js", "cordis.patch.yml", "locale", "icon.svg"],
+  "engines": {"dsh": "0.2.1-rc.3"},
+  "dsh": {"bundle": {"patch": "cordis.patch.yml"}, "client": {"platform": "web", "inject": ["slots", "remote", "remote.settings"]}},
+  "dependencies": {"@deepseek-ai/schemastery": "~3.18.5"},
+  "license": "MIT",
+  "author": "Kaczev",
+  "repository": {"type": "git", "url": "git+https://github.com/Kaczev/dsh-provider-failover.git", "directory": "plugin"},
+  "homepage": "https://github.com/Kaczev/dsh-provider-failover#readme",
+  "bugs": {"url": "https://github.com/Kaczev/dsh-provider-failover/issues"},
+  "keywords": ["deepseek-harness", "dsh", "failover", "pi-ai"],
+  "publishConfig": {"access": "public", "registry": "https://registry.npmjs.org"}
 }

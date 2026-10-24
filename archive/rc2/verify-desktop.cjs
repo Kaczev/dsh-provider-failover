@@ -1,3 +1,3 @@
 const fs=require('node:fs');const path=require('node:path');const crypto=require('node:crypto');
-const root=__dirname;const m=JSON.parse(fs.readFileSync(path.join(root,'.desktop-candidate/manifest.json')));for(const c of m.changes){const data=fs.readFileSync(path.join(m.output,c.name));if(crypto.createHash('sha256').update(data).digest('hex')!==c.sha256)throw Error('Electron ASAR checksum mismatch');}
+const root=path.resolve(__dirname,'../..');const m=JSON.parse(fs.readFileSync(path.join(root,'.desktop-candidate/manifest.json')));for(const c of m.changes){const data=fs.readFileSync(path.join(m.output,c.name));if(crypto.createHash('sha256').update(data).digest('hex')!==c.sha256)throw Error('Electron ASAR checksum mismatch');}
 const pkg=JSON.parse(fs.readFileSync(path.join(m.output,'dsh/package.json')));if(pkg.version!=='0.2.1-rc.2')throw Error('Version mismatch');console.log('PASS Electron ASAR reader: both patched modules and runtime package readable');

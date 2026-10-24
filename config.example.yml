@@ -1,9 +1,7 @@
-# 插件条目的 config 值；不是供应商配置，也不修改主地址。
-# 安装包默认禁用。只有你确认允许备用端点接收同一个 API Key 后，
-# 才把 enabled 和 confirmCredentialRecipients 都改为 true。
+# 插件自身的 config 示例；不修改供应商主地址、模型或 API Key。
+# 推荐从「设置 → 备用地址」保存。仅使用你信任、兼容原协议和密钥的端点。
 providers:
-  four-router:
+  example-provider:
     enabled: false
-    confirmCredentialRecipients: false
     backups:
-      - https://hk.4Router.net/v1
+      - https://backup.example.com/v1

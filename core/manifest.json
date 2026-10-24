@@ -10,6 +10,11 @@
       "file": "@deepseek-ai/dsh-llm-pi-ai/lib/index.js",
       "originalSha256": "99b5c20830a52f69641df8a18a39206079b0c725201958cce2c4a934f1d4f7cd",
       "patchedSha256": "7e71d0fb4e9c016383adb5db867e26433ff53cb6bcff4f0a4a502f1806961eea"
+    },
+    {
+      "file": "@deepseek-ai/dsh-client-ui-settings-models/lib/client.js",
+      "originalSha256": "acdc8c57e72c7600e0aab7d8564417ca53482e6cf1d61c6702acfa64bc406f1a",
+      "patchedSha256": "af4103672bfe4f4b47c7242268f8fdc5b9a6f27c80af79a15b148e55a4e5665d"
     }
   ]
 }

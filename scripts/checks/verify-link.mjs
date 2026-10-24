@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import assert from 'node:assert/strict';
-const root=import.meta.dirname;
+const root=path.resolve(import.meta.dirname,'../..');
 const profile=process.argv[2] ?? process.env.DSH_PROFILE_DIR ?? path.join(os.homedir(),'.dsh/profiles/desktop');
 const installed=path.join(profile,'node_modules/@kaczev/dsh-provider-line-failover');
 const expected=fs.realpathSync(path.join(root,'plugin'));

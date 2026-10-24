@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-const root=import.meta.dirname;
+const root=path.resolve(import.meta.dirname,'../..');
 const source=path.join(process.env.LOCALAPPDATA,'Programs/DeepSeek Harness/resources/app.asar');
 const output=path.join(root,'.desktop-candidate/app.asar');
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
