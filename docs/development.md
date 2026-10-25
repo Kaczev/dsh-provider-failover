@@ -1,6 +1,6 @@
 # 本地开发
 
-插件版本为 0.1.0，目标宿主为 DSH 0.2.1-rc.3。代码入口见[仓库导航](../INDEX.md)，使用说明见[README](../README.md)。
+插件版本为 0.1.1，目标宿主为 DSH 0.2.1-rc.3。代码入口见[仓库导航](../INDEX.md)，使用说明见[README](../README.md)。
 
 插件用公开 `settings.section` 注册独立设置页，只写自身 namespace；传输部分可逆地包装活动 `PiAiAdapter.streamWithSnapshot`。当前实现不需要核心补丁，不能对 Desktop ASAR 执行 apply 或替换。
 

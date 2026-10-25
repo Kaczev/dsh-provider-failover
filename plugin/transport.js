@@ -82,7 +82,6 @@ export function installTransport(PiAiAdapter, readProviders, turns, now = Date.n
      if (VISIBLE.includes(chunk.type)) { if (!visible) report('active', index, urls[index]); visible = true; }
      if (chunk.type === 'finish' && chunk.reason?.kind === 'error') {
       report();
-      if (visible && !options.signal?.aborted) throw Object.assign(Error('Stream interrupted after output; automatic replay blocked'), { code: 'FAILOVER_PARTIAL_STREAM' });
       const failure = chunk.reason.failure;
       const status = failure.status ?? Number(/^\s*(?:HTTP(?: status)?[: ]+)?([1-5]\d\d)(?:[:\s]|$)/i.exec(failure.message ?? '')?.[1]);
       const eligible = !options.signal?.aborted && !['AUTH','INVALID_REQUEST','CONTEXT_WINDOW_EXCEEDED','ABORTED','RATE_LIMIT','INVALID_CREDENTIAL','MISSING_CREDENTIAL'].includes(failure.code) &&
@@ -91,7 +90,11 @@ export function installTransport(PiAiAdapter, readProviders, turns, now = Date.n
        if (index === 0) health.primaryProbe = true;
        const line = health.lines[index];
        line.due = now() + DELAYS[Math.min(line.failures, DELAYS.length - 1)]; line.failures++; line.since = null; line.successes = 0;
-       route.failure = failure; route.index = -1; advance = true; break;
+       route.failure = failure; route.index = -1;
+       // Only the host can settle/discard a partial attempt before replaying it.
+       // Preserve its terminal failure and retry budget; never splice two streams.
+       if (visible) { yield chunk; return; }
+       advance = true; break;
       }
      } else if (chunk.type === 'finish' && SUCCESS.includes(chunk.reason?.kind)) {
       const line = health.lines[index]; health.selected = index;

@@ -55,20 +55,55 @@ test('memory wrapper exhausts ordered backups and refuses auth errors', async ()
  }
 });
 
-test('memory wrapper never replays visible output or cancellation', async () => {
- for (const cancelled of [false, true]) {
-  let calls = 0;
+test('partial output preserves failure and waits for host retry before switching', async () => {
+ for (const type of ['block-start', 'text-delta', 'reasoning-delta', 'tool-call-delta', 'block-end']) {
+  const seen = [];
+  const failure = { code: 'TRANSPORT', message: 'socket terminated', status: 502, requestId: 'fixture-request' };
   class Adapter {
    profileOf() { return { apiKeyEnv: 'FIXTURE' }; }
    modelOf() { return { baseUrl: 'https://primary.test' }; }
-   async *streamWithSnapshot() { calls++; yield { type: 'text-delta', text: 'partial' }; yield { type: 'finish', reason: { kind: 'error', failure: { code: 'TRANSPORT' } } }; }
+   async *streamWithSnapshot() {
+    const url = this.modelOf().baseUrl; seen.push(url);
+    if (url === 'https://primary.test') {
+     yield { type, text: 'partial' };
+     yield { type: 'finish', reason: { kind: 'error', failure } };
+    } else { yield { type: 'text-delta', text: 'replacement' }; yield { type: 'finish', reason: { kind: 'stop' } }; }
+   }
+  }
+  const restore = installTransport(Adapter, () => ({ p: { enabled: true, backups: ['https://backup.test'] } }), new Map([['s', { routes: new Map() }]]));
+  try {
+   const adapter = new Adapter();
+   const consume = async () => { const chunks = []; for await (const chunk of adapter.streamWithSnapshot({ sessionId: 's', provider: 'p' }, {})) chunks.push(chunk); return chunks; };
+   const first = await consume();
+   assert.equal(first.at(-1).reason.failure, failure);
+   assert.deepEqual(seen, ['https://primary.test'], 'no inline replay after partial output');
+   assert.equal(first.filter(chunk => chunk.type === 'finish').length, 1);
+   const second = await consume(); // A new invocation represents the host-authorized retry.
+   assert.equal(second.at(-1).reason.kind, 'stop');
+   assert.deepEqual(seen, ['https://primary.test', 'https://backup.test']);
+  } finally { restore(); }
+ }
+});
+
+test('partial non-switchable failures and cancellation retain original outcomes', async () => {
+ for (const code of ['AUTH', 'INVALID_REQUEST', 'CONTEXT_WINDOW_EXCEEDED', 'RATE_LIMIT', 'ABORTED', 'TRANSPORT']) {
+  const cancelled = code === 'TRANSPORT';
+  const failure = { code, message: 'original failure' };
+  const seen = [];
+  class Adapter {
+   profileOf() { return { apiKeyEnv: 'FIXTURE' }; }
+   modelOf() { return { baseUrl: 'https://primary.test' }; }
+   async *streamWithSnapshot() { seen.push(this.modelOf().baseUrl); yield { type: 'text-delta', text: 'partial' }; yield { type: 'finish', reason: { kind: 'error', failure } }; }
   }
   const restore = installTransport(Adapter, () => ({ p: { enabled: true, backups: ['https://backup.test'] } }), new Map([['s', { routes: new Map() }]]));
   const controller = new AbortController(); if (cancelled) controller.abort();
   try {
-   const consume = async () => { for await (const _ of new Adapter().streamWithSnapshot({ sessionId: 's', provider: 'p', signal: controller.signal }, {})) {} };
-   if (cancelled) await consume(); else await assert.rejects(consume(), { code: 'FAILOVER_PARTIAL_STREAM' });
-   assert.equal(calls, 1);
+   const adapter = new Adapter();
+   for (let attempt = 0; attempt < 2; attempt++) {
+    const chunks = []; for await (const chunk of adapter.streamWithSnapshot({ sessionId: 's', provider: 'p', signal: controller.signal }, {})) chunks.push(chunk);
+    assert.equal(chunks.at(-1).reason.failure, failure);
+   }
+   assert.deepEqual(seen, ['https://primary.test', 'https://primary.test']);
   } finally { restore(); }
  }
 });
