@@ -1,6 +1,43 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { installTransport } from '../plugin/transport.js';
+import { installTransport, normalizeFailure } from '../plugin/transport.js';
+
+const serverMessage = 'An error occurred while processing your request. Please try again later. (server_error)';
+test('only the exact known PI_AI server error is normalized without mutating diagnostics', () => {
+ const failure = Object.freeze({ code: 'PI_AI_ERROR', message: serverMessage, requestId: 'fixture', providerRetryAfterMs: 5 });
+ assert.deepEqual(normalizeFailure(failure), { ...failure, code: 'SERVER' });
+ for (const value of [
+  { code: 'PI_AI_ERROR', message: 'unsupported response status (server_error)' },
+  { code: 'PI_AI_ERROR', message: serverMessage.replace(' (server_error)', '') },
+  { code: 'PI_AI_ERROR', message: serverMessage, status: 401 },
+  ...['AUTH', 'RATE_LIMIT', 'INVALID_REQUEST', 'ABORTED', 'SERVER'].map(code => ({ code, message: serverMessage })),
+ ]) assert.equal(normalizeFailure(value), value);
+ assert.equal(failure.code, 'PI_AI_ERROR');
+});
+
+for (const mode of ['empty', 'partial', 'cancelled', 'disabled', 'auxiliary']) test(`server_error recovery boundary: ${mode}`, async () => {
+ const seen = [], failure = Object.freeze({ code: 'PI_AI_ERROR', message: serverMessage });
+ class Adapter {
+  profileOf() { return { apiKeyEnv: 'FIXTURE' }; }
+  modelOf() { return { baseUrl: 'https://primary.test' }; }
+  async *streamWithSnapshot() {
+   const url = this.modelOf().baseUrl; seen.push(url);
+   if (url !== 'https://primary.test') { yield { type: 'finish', reason: { kind: 'stop' } }; return; }
+   if (mode !== 'empty') yield { type: 'tool-call-delta', arguments: '{' };
+   yield { type: 'finish', reason: { kind: 'error', failure } };
+  }
+ }
+ const restore = installTransport(Adapter, () => ({ p: { enabled: mode !== 'disabled', backups: ['https://backup.test'] } }), new Map([['s', { routes: new Map() }]]));
+ const controller = new AbortController(); if (mode === 'cancelled') controller.abort();
+ try {
+  const result = []; for await (const chunk of new Adapter().streamWithSnapshot({ sessionId: 's', provider: 'p', signal: controller.signal, purpose: mode === 'auxiliary' ? 'title' : undefined }, {})) result.push(chunk);
+  assert.equal(result.filter(chunk => chunk.type === 'finish').length, 1);
+  assert.deepEqual(seen, mode === 'empty' ? ['https://primary.test', 'https://backup.test'] : ['https://primary.test']);
+  if (mode === 'empty') assert.equal(result.at(-1).reason.kind, 'stop');
+  else if (mode === 'partial') assert.deepEqual(result.at(-1).reason.failure, { ...failure, code: 'SERVER' });
+  else assert.equal(result.at(-1).reason.failure, failure);
+ } finally { restore(); }
+});
 
 test('memory wrapper switches within turn, resets next turn and restores prototype', async () => {
  const seen = [];

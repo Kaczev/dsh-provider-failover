@@ -2,6 +2,16 @@
 const DELAYS = [30_000, 60_000, 120_000, 240_000, 300_000];
 const VISIBLE = ['block-start','text-delta','reasoning-delta','tool-call-delta','block-end'];
 const SUCCESS = ['stop','tool-calls','max-tokens'];
+// The observed upstream message ends with an explicit server_error token.
+// Only recover this known server failure, never arbitrary PI_AI_ERROR text.
+export function normalizeFailure(failure) {
+ const status = failure.status ?? Number(/^\s*(?:HTTP(?: status)?[: ]+)?([1-5]\d\d)(?:[:\s]|$)/i.exec(failure.message ?? '')?.[1]);
+ if (failure.code === 'PI_AI_ERROR' && !Number.isFinite(status) &&
+     /^An error occurred while processing your request\. Please try again later\. \(server_error\)$/.test(failure.message ?? '')) {
+  return { ...failure, code: 'SERVER' };
+ }
+ return failure;
+}
 export function installTransport(PiAiAdapter, readProviders, turns, now = Date.now, publish = () => {}) {
  const prototype = PiAiAdapter.prototype, original = prototype.streamWithSnapshot;
  const marker = Symbol.for('kaczev.failover.wrapper');
@@ -82,18 +92,20 @@ export function installTransport(PiAiAdapter, readProviders, turns, now = Date.n
      if (VISIBLE.includes(chunk.type)) { if (!visible) report('active', index, urls[index]); visible = true; }
      if (chunk.type === 'finish' && chunk.reason?.kind === 'error') {
       report();
-      const failure = chunk.reason.failure;
+      const originalFailure = chunk.reason.failure;
+      const failure = options.signal?.aborted ? originalFailure : normalizeFailure(originalFailure);
+      const terminal = failure === originalFailure ? chunk : { ...chunk, reason: { ...chunk.reason, failure } };
       const status = failure.status ?? Number(/^\s*(?:HTTP(?: status)?[: ]+)?([1-5]\d\d)(?:[:\s]|$)/i.exec(failure.message ?? '')?.[1]);
       const eligible = !options.signal?.aborted && !['AUTH','INVALID_REQUEST','CONTEXT_WINDOW_EXCEEDED','ABORTED','RATE_LIMIT','INVALID_CREDENTIAL','MISSING_CREDENTIAL'].includes(failure.code) &&
-       (Number.isFinite(status) ? [408,502,503,504].includes(status) : ['TRANSPORT','TIMEOUT'].includes(failure.code));
+       (failure !== originalFailure || (Number.isFinite(status) ? [408,502,503,504].includes(status) : ['TRANSPORT','TIMEOUT'].includes(failure.code)));
       if (eligible) {
        if (index === 0) health.primaryProbe = true;
        const line = health.lines[index];
        line.due = now() + DELAYS[Math.min(line.failures, DELAYS.length - 1)]; line.failures++; line.since = null; line.successes = 0;
        route.failure = failure; route.index = -1;
        // Only the host can settle/discard a partial attempt before replaying it.
-       // Preserve its terminal failure and retry budget; never splice two streams.
-       if (visible) { yield chunk; return; }
+       // Preserve terminal diagnostics and the host retry budget; never splice streams.
+       if (visible) { yield terminal; return; }
        advance = true; break;
       }
      } else if (chunk.type === 'finish' && SUCCESS.includes(chunk.reason?.kind)) {
