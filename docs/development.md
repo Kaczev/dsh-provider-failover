@@ -1,6 +1,6 @@
 # 本地开发
 
-插件版本为 0.1.2，目标宿主为 DSH 0.2.1-rc.3。代码入口见[仓库导航](../INDEX.md)，使用说明见[README](../README.md)。
+插件版本为 0.1.3，验收宿主为 DSH 0.2.1-rc.5，兼容声明为 `>=0.2.1-rc.3`。代码入口见[仓库导航](../INDEX.md)，使用说明见[README](../README.md)。
 
 插件用公开 `settings.section` 注册独立设置页，只写自身 namespace；传输部分可逆地包装活动 `PiAiAdapter.streamWithSnapshot`。当前实现不需要核心补丁，不能对 Desktop ASAR 执行 apply 或替换。
 
@@ -12,7 +12,11 @@
 npm install --prefix plugin --ignore-scripts --no-audit --no-fund
 ```
 
-完整测试还依赖被 Git 忽略的 `.runtime/`：Cordis、SettingsForms、Loader、历史路由回归使用的隔离补丁运行时，以及从未经修改的 rc3 安装包只读提取的适配器副本。先检查各测试的导入路径；不能用旧 patched 适配器冒充 rc3 副本。只克隆仓库并安装 npm 依赖，尚不足以运行完整套件。提取工具及其限制见[工具导航](../scripts/INDEX.md)。
+完整测试还依赖被 Git 忽略的 `.runtime/`：Cordis、SettingsForms、Loader、历史路由回归使用的隔离补丁运行时，以及从未经修改的 rc3 安装包只读提取的适配器副本。先检查各测试的导入路径；不能用旧 patched 适配器冒充 rc3 副本。只克隆仓库并安装 npm 依赖，尚不足以运行完整套件。提取工具及其限制见[工具导航](../scripts/INDEX.md)。rc.5 网络回归使用独立的原版 npm 包：
+
+```text
+npm install --prefix .runtime/rc5 --ignore-scripts --no-audit --no-fund @deepseek-ai/dsh-llm-pi-ai@0.2.1-rc.5 @deepseek-ai/dsh-llm-retry@0.2.1-rc.5
+```
 
 ## 检查
 
@@ -27,7 +31,7 @@ npm run verify:link
 
 `check` 包括语法、全部测试、隔离分发验证及发布元数据检查。`test:settings` 使用真实 SettingsForms、临时持久化替身和隔离 Loader 提交算法；不写用户配置，也不证明跨 namespace 授权。`verify:link` 读取本机 profile 的源码链接，不能证明模块已重载。
 
-默认测试只请求本地模拟服务，使用合成密钥。rc3 网络测试比较主备请求体、路径、模型和参数；Cordis 事件测试中的 Agent 是替身。真实供应商探针需要显式环境变量授权，可能计费，不属于验收流程。
+默认测试只请求本地模拟服务，使用合成密钥。rc.3 与 rc.5 网络测试比较主备请求体、路径、模型和参数；Cordis 事件测试中的 Agent 是替身。真实供应商探针需要显式环境变量授权，可能计费，不属于验收流程。
 
 ## GUI 验证范围
 

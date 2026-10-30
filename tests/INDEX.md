@@ -7,4 +7,6 @@
 - [transport-host.test.mjs](transport-host.test.mjs)：真实 Cordis 轮次事件、跨会话冷却、释放和卸载；Agent 为替身。
 - [transport-rc3.test.mjs](transport-rc3.test.mjs)：未经修改的 rc3 适配器连接本地 HTTP 模拟服务，比较请求体、路径、模型及合成密钥。
 - [transport-partial-rc3.test.mjs](transport-partial-rc3.test.mjs)：真实 rc3 适配器接收部分 SSE 后遇到 EOF 或明确 server_error；连接真实 llm-retry 验证错误分类、策略排除和预算，不在流内重放，新尝试再用备线。
+- [transport-rc5.test.mjs](transport-rc5.test.mjs)：未经修改的 rc.5 npm 适配器连接本地 HTTP 模拟服务，核对主备请求一致与同轮粘滞。
+- [transport-partial-rc5.test.mjs](transport-partial-rc5.test.mjs)：rc.5 适配器与重试器验证部分 SSE、EOF、server_error 分类及下一次宿主尝试切线。
 - [legacy-router.test.mjs](legacy-router.test.mjs)：当前客户端校验/Config 测试，以及依赖历史隔离补丁运行时的路由回归；旧用例的“下一轮主线重置”不描述当前 transport 策略。

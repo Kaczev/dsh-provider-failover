@@ -5,7 +5,7 @@ const root = path.resolve(import.meta.dirname, '../..');
 const read = name => fs.readFileSync(path.join(root, name));
 const meta = JSON.parse(read('plugin/package.json'));
 assert.equal(meta.name, 'dsh-provider-failover');
-assert.equal(meta.version, '0.1.2');
+assert.equal(meta.version, '0.1.3');
 assert.equal(JSON.parse(read('plugin/package-lock.json')).name, meta.name);
 assert.equal(JSON.parse(read('plugin/package-lock.json')).packages[''].name, meta.name);
 assert.ok(read('plugin/cordis.patch.yml').toString().includes("name: '" + meta.name + "'"));
@@ -17,5 +17,5 @@ assert.equal(lock.version, meta.version); assert.equal(lock.packages[''].version
 for (const file of ['README.md','LICENSE']) assert.ok(read(file).equals(read('plugin/' + file)), file + ' differs');
 assert.equal(meta.publishConfig.access, 'public');
 assert.deepEqual(meta.files, ['index.js','transport.js','route-status.js','client.js','cordis.patch.yml','locale','icon.svg']);
-assert.equal(meta.engines.dsh, '0.2.1-rc.3');
+assert.equal(meta.engines.dsh, '>=0.2.1-rc.3');
 console.log('PASS version, publish allowlist, compatibility, README and LICENSE parity');
